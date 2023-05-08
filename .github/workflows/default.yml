@@ -1,0 +1,48 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  default:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: |
+          yarn install
+          yarn global add sfdx-cli
+      - name: Authenticate DevHub and create scratch org
+        env:
+          SFDX_AUTH_URL_DEVHUB: ${{ secrets.SFDX_AUTH_URL_DEVHUB }}
+        run: |
+          sfdx org login sfdx-url -d -f <(echo "${SFDX_AUTH_URL_DEVHUB}")
+          sfdx force org create -f config/project-scratch-def.json -s
+      - name: Test via source delete
+        if: always()
+        run: |
+          ./scripts/prepare.sh
+          sfdx force source delete -m CustomLabel:DeleteMe --no-prompt
+          ./scripts/check.sh
+      - name: Test via remote delete and pull
+        if: always()
+        run: |
+          ./scripts/prepare.sh
+          sfdx force mdapi deploy -d mdapi/delete-customlabel -w 10
+          sfdx force source pull
+          ./scripts/check.sh
+      - name: Delete scratch org
+        if: always()
+        run: |
+          sfdx org delete scratch -p
