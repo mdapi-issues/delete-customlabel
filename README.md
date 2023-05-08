@@ -1,3 +1,3 @@
-# template
+# delete-customlabel
 
-> Minimal working example to demonstrate a bug in DESCRIPTION
+> Minimal working example to demonstrate that deleting a CustomLabel deletes the whole CustomLabels.labels-meta.xml file
